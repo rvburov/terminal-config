@@ -1,0 +1,99 @@
+[keyboard]
+bindings = [
+  # Suppress the matching logical defaults so one keypress runs one action.
+  { key = "C", mods = "Control|Shift", action = "None" },
+  { key = "V", mods = "Control|Shift", action = "None" },
+  { key = "F", mods = "Control|Shift", mode = "~Search", action = "None" },
+  { key = "B", mods = "Control|Shift", mode = "~Search", action = "None" },
+
+  # Windows scan codes refer to positions on the keyboard.
+  { key = 46, mods = "Control|Shift", action = "Copy" },   # C / С
+  { key = 47, mods = "Control|Shift", action = "Paste" },  # V / М
+  { key = 47, mods = "Control", action = "Paste" },
+  { key = 46, mods = "Control", mode = "~Vi|~Search", chars = "\u0003" },
+  { key = "Insert", mods = "Control", action = "Copy" },
+  { key = "Insert", mods = "Shift", action = "Paste" },
+  { key = 33, mods = "Control|Shift", mode = "~Search", action = "SearchForward" },
+  { key = 48, mods = "Control|Shift", mode = "~Search", action = "SearchBackward" },
+
+  # Ctrl+L keeps its shell byte, while still dismissing Alacritty notices.
+  { key = "L", mods = "Control", action = "None" },
+  { key = 38, mods = "Control", action = "ClearLogNotice" },
+  { key = 38, mods = "Control", mode = "~Vi|~Search", chars = "\u000c" },
+
+  # Ctrl+V remains Paste in Vi mode instead of toggling block selection.
+  { key = "V", mods = "Control", mode = "Vi|~Search", action = "None" },
+
+  # Native Vi-mode Ctrl shortcuts; suppress logical defaults to avoid repeats.
+  { key = "C", mods = "Control", mode = "Vi|~Search", action = "None" },
+  { key = "Y", mods = "Control", mode = "Vi|~Search", action = "None" },
+  { key = "E", mods = "Control", mode = "Vi|~Search", action = "None" },
+  { key = "B", mods = "Control", mode = "Vi|~Search", action = "None" },
+  { key = "F", mods = "Control", mode = "Vi|~Search", action = "None" },
+  { key = "U", mods = "Control", mode = "Vi|~Search", action = "None" },
+  { key = "D", mods = "Control", mode = "Vi|~Search", action = "None" },
+  { key = 46, mods = "Control", mode = "Vi|~Search", action = "ToggleViMode" },
+  { key = 21, mods = "Control", mode = "Vi|~Search", action = "ScrollLineUp" },
+  { key = 18, mods = "Control", mode = "Vi|~Search", action = "ScrollLineDown" },
+  { key = 48, mods = "Control", mode = "Vi|~Search", action = "ScrollPageUp" },
+  { key = 33, mods = "Control", mode = "Vi|~Search", action = "ScrollPageDown" },
+  { key = 22, mods = "Control", mode = "Vi|~Search", action = "ScrollHalfPageUp" },
+  { key = 32, mods = "Control", mode = "Vi|~Search", action = "ScrollHalfPageDown" },
+
+  # Native search editing and history, including searches opened from Vi mode.
+  { key = "C", mods = "Control", mode = "Search", action = "None" },
+  { key = "U", mods = "Control", mode = "Search", action = "None" },
+  { key = "W", mods = "Control", mode = "Search", action = "None" },
+  { key = "P", mods = "Control", mode = "Search", action = "None" },
+  { key = "N", mods = "Control", mode = "Search", action = "None" },
+  { key = 46, mods = "Control", mode = "Search", action = "SearchCancel" },
+  { key = 22, mods = "Control", mode = "Search", action = "SearchClear" },
+  { key = 17, mods = "Control", mode = "Search", action = "SearchDeleteWord" },
+  { key = 25, mods = "Control", mode = "Search", action = "SearchHistoryPrevious" },
+  { key = 49, mods = "Control", mode = "Search", action = "SearchHistoryNext" },
+
+  # Modified Vi navigation/selection keys keep their default roles.
+  { key = "G", mods = "Shift", mode = "Vi|~Search", action = "None" },
+  { key = "Y", mods = "Shift", mode = "Vi|~Search", action = "None" },
+  { key = "V", mods = "Shift", mode = "Vi|~Search", action = "None" },
+  { key = "V", mods = "Alt", mode = "Vi|~Search", action = "None" },
+  { key = "N", mods = "Shift", mode = "Vi|~Search", action = "None" },
+  { key = "F", mods = "Shift", mode = "Vi|~Search", action = "None" },
+  { key = "T", mods = "Shift", mode = "Vi|~Search", action = "None" },
+  { key = "H", mods = "Shift", mode = "Vi|~Search", action = "None" },
+  { key = "M", mods = "Shift", mode = "Vi|~Search", action = "None" },
+  { key = "L", mods = "Shift", mode = "Vi|~Search", action = "None" },
+  { key = "B", mods = "Shift", mode = "Vi|~Search", action = "None" },
+  { key = "W", mods = "Shift", mode = "Vi|~Search", action = "None" },
+  { key = "E", mods = "Shift", mode = "Vi|~Search", action = "None" },
+  { key = 34, mods = "Shift", mode = "Vi|~Search", action = "ScrollToBottom" },
+  { key = 21, mods = "Shift", mode = "Vi|~Search", action = "ToggleNormalSelection" },
+  { key = 21, mods = "Shift", mode = "Vi|~Search", action = "Last" },
+  { key = 21, mods = "Shift", mode = "Vi|~Search", action = "Copy" },
+  { key = 21, mods = "Shift", mode = "Vi|~Search", action = "ClearSelection" },
+  { key = 47, mods = "Shift", mode = "Vi|~Search", action = "ToggleLineSelection" },
+  { key = 47, mods = "Alt", mode = "Vi|~Search", action = "ToggleSemanticSelection" },
+  { key = 49, mods = "Shift", mode = "Vi|~Search", action = "SearchPrevious" },
+  { key = 33, mods = "Shift", mode = "Vi|~Search", action = "InlineSearchBackward" },
+  { key = 20, mods = "Shift", mode = "Vi|~Search", action = "InlineSearchBackwardShort" },
+  { key = 35, mods = "Shift", mode = "Vi|~Search", action = "High" },
+  { key = 50, mods = "Shift", mode = "Vi|~Search", action = "Middle" },
+  { key = 38, mods = "Shift", mode = "Vi|~Search", action = "Low" },
+  { key = 48, mods = "Shift", mode = "Vi|~Search", action = "WordLeft" },
+  { key = 17, mods = "Shift", mode = "Vi|~Search", action = "WordRight" },
+  { key = 18, mods = "Shift", mode = "Vi|~Search", action = "WordRightEnd" },
+
+  # Zoom uses physical main-keyboard and numpad +/- positions.
+  { key = "0", mods = "Control", action = "None" },
+  { key = "=", mods = "Control", action = "None" },
+  { key = "+", mods = "Control", action = "None" },
+  { key = "-", mods = "Control", action = "None" },
+  { key = 11, mods = "Control", action = "ResetFontSize" },
+  { key = "Numpad0", mods = "Control", action = "ResetFontSize" },
+  { key = "NumpadEquals", mods = "Control", action = "IncreaseFontSize" },
+  { key = 13, mods = "Control", action = "IncreaseFontSize" },
+  { key = 13, mods = "Control|Shift", action = "IncreaseFontSize" },
+  { key = 12, mods = "Control", action = "DecreaseFontSize" },
+  { key = 78, mods = "Control", action = "IncreaseFontSize" },
+  { key = 74, mods = "Control", action = "DecreaseFontSize" },
+]
