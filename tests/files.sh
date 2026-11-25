@@ -111,4 +111,30 @@ terminal_ls --color=never "$fixture" > /dev/null
 glob_after=$(shopt -p nullglob dotglob failglob nocaseglob || :)
 [[ $glob_before == "$glob_after" ]] || fail 'Caller glob options changed'
 IFS=$saved_ifs
+set +f
+shopt -u failglob nocaseglob
+
+# The ls alias keeps the system format in pipes and $(...), unless a tree
+# option asks for the tree.
+listing=$(_terminal_files_ls "$fixture")
+native_listing=$(command ls "$fixture")
+[[ $listing == "$native_listing" ]] || fail 'ls alias in a pipe'
+listing=$(_terminal_files_ls --level=3 "$fixture")
+[[ $listing == *'├── '*'deep.md'* ]] || fail 'ls alias with --level in a pipe'
+[[ $(alias ls) == *_terminal_files_ls* ]] || fail 'ls alias'
+
+# Grouping by extension must order exactly like the merge sort, including
+# the fallback for many distinct extensions.
+for keys_count in 5 80; do
+  sort_dir="$test_root/keys-$keys_count"
+  mkdir "$sort_dir"
+  for ((index = 0; index < 160; index++)); do
+    : > "$sort_dir/n$index.e$((index % keys_count))"
+    : > "$sort_dir/U$index.E$((index % 7))"
+  done
+  : > "$sort_dir/noext"
+  grouped=$(terminal_ls --color=never "$sort_dir")
+  merged=$(_terminal_files_group_sort() { return 1; }; terminal_ls --color=never "$sort_dir")
+  [[ $grouped == "$merged" ]] || fail "Grouped sort with $keys_count extensions"
+done
 printf 'PASS: file tree order, depth, hidden entries, names, colors, errors and shell state\n'

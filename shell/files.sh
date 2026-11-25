@@ -38,27 +38,44 @@ _terminal_files_style() {
 }
 
 _terminal_files_print() {
-  local path=$1 label=$2
+  local path=$1 label=$2 suffix=''
   _terminal_files_style "$path"
-  if ((_terminal_files_use_color)); then printf '\033[38;5;%sm' "$_terminal_files_color"; fi
-  printf '%s ' "$_terminal_files_icon"
-  _terminal_files_name "$label"
-  if [[ -d $path && ! -L $path && $label != */ ]]; then printf '/'; fi
-  if ((_terminal_files_use_color)); then printf '\033[0m'; fi
-  printf '\n'
+  _terminal_files_is_directory=0
+  if [[ -d $path && ! -L $path ]]; then
+    _terminal_files_is_directory=1
+    [[ $label == */ ]] || suffix=/
+  fi
+  # Escaping needs a subshell, so only unusual names take that path.
+  if [[ $label == *[[:cntrl:]\\]* ]]; then
+    label=$(_terminal_files_name "$label")
+  fi
+  # One write per entry: many tiny writes are slow on a terminal.
+  if ((_terminal_files_use_color)); then
+    printf '%s\033[38;5;%sm%s %s%s\033[0m\n' "$_terminal_files_prefix" \
+      "$_terminal_files_color" "$_terminal_files_icon" "$label" "$suffix"
+  else
+    printf '%s%s %s%s\n' "$_terminal_files_prefix" "$_terminal_files_icon" "$label" "$suffix"
+  fi
 }
 
 _terminal_files_extension_key() {
   local name=$1 extension='' character prefix
   local uppercase=ABCDEFGHIJKLMNOPQRSTUVWXYZ lowercase=abcdefghijklmnopqrstuvwxyz
-  local LC_ALL=C
   _terminal_files_extension=''
   while [[ $name == .* ]]; do name=${name#.}; done
-  if [[ $name == *.* ]]; then extension=${name##*.}; fi
+  [[ $name == *.* ]] || return 0
+  extension=${name##*.}
+  # Most extensions are already lowercase: skip the per-character loop and
+  # avoid switching the locale for every entry.
+  if [[ $extension != *[ABCDEFGHIJKLMNOPQRSTUVWXYZ]* ]]; then
+    _terminal_files_extension=$extension
+    return 0
+  fi
+  local LC_ALL=C
   while [[ -n $extension ]]; do
     character=${extension:0:1}
     case "$character" in
-      [A-Z])
+      [ABCDEFGHIJKLMNOPQRSTUVWXYZ])
         prefix=${uppercase%%"$character"*}
         character=${lowercase:${#prefix}:1}
         ;;
@@ -68,9 +85,57 @@ _terminal_files_extension_key() {
   done
 }
 
-# Stable bottom-up merge sort. These two arrays belong to the calling walker.
+# Stable sort of the walker's files/file_keys arrays by extension key.
 # Equal extension keys retain the filename order supplied by the shell glob.
+# A directory usually has few distinct extensions, so with Bash 4+ the files
+# are grouped by key in one pass and only the distinct keys are sorted.
 _terminal_files_sort() {
+  local count=$1
+  if ((count < 2)); then return 0; fi
+  if ((BASH_VERSINFO[0] >= 4)); then
+    _terminal_files_group_sort "$count" && return 0
+  fi
+  _terminal_files_merge_sort "$count"
+}
+
+_terminal_files_group_sort() {
+  local count=$1 index key position slot member key_count=0 IFS=" "
+  local LC_ALL=C
+  local -A members
+  local -a keys sorted_files sorted_keys
+  for ((index = 0; index < count; index++)); do
+    # The prefix allows the empty key; members hold digits only.
+    slot="x${file_keys[index]}"
+    if [[ -z ${members[$slot]+set} ]]; then
+      # Insertion into the sorted list of distinct keys. Many distinct
+      # keys would make this quadratic, so leave them to the merge sort.
+      ((key_count < 64)) || return 1
+      key=${file_keys[index]}
+      for ((position = key_count; position > 0; position--)); do
+        [[ ${keys[position - 1]} > $key ]] || break
+        keys[position]=${keys[position - 1]}
+      done
+      keys[position]=$key
+      key_count=$((key_count + 1))
+      members[$slot]=$index
+    else
+      members[$slot]+=" $index"
+    fi
+  done
+  index=0
+  for ((position = 0; position < key_count; position++)); do
+    for member in ${members["x${keys[position]}"]}; do
+      sorted_files[index]=${files[member]}
+      sorted_keys[index]=${file_keys[member]}
+      index=$((index + 1))
+    done
+  done
+  files=("${sorted_files[@]}")
+  file_keys=("${sorted_keys[@]}")
+}
+
+# Stable bottom-up merge sort, used with Bash 3.2 or many distinct keys.
+_terminal_files_merge_sort() {
   local count=$1 width left middle right first second target index
   local LC_ALL=C
   local -a sorted_files sorted_keys
@@ -139,14 +204,14 @@ _terminal_files_walk() {
     path=${directories[index]}
     name=${path##*/}
     if ((index + 1 == directory_count)); then
-      printf '%s└── ' "$prefix"
+      _terminal_files_prefix="$prefix└── "
       next_prefix="$prefix    "
     else
-      printf '%s├── ' "$prefix"
+      _terminal_files_prefix="$prefix├── "
       next_prefix="$prefix│   "
     fi
     _terminal_files_print "$path" "$name"
-    if [[ -d $path && ! -L $path ]]; then
+    if ((_terminal_files_is_directory)); then
       _terminal_files_walk "$path" "$next_prefix" "$((depth + 1))" || result=1
     fi
   done
@@ -165,6 +230,7 @@ _terminal_files_main() (
   local _terminal_files_level=$1
   local _terminal_files_show_hidden=0 _terminal_files_use_color=0
   local _terminal_files_icon='' _terminal_files_color=252
+  local _terminal_files_prefix='' _terminal_files_is_directory=0
   local parse_options=1 color_mode=auto level_text path index path_count=0 result=0
   local -a original_arguments paths
   shift
@@ -198,7 +264,7 @@ _terminal_files_main() (
             *) printf 'terminal-config — допустимые цвета auto, always, never\n' >&2; return 2 ;;
           esac
           ;;
-        -*) command ls "${original_arguments[@]}"; return "$?" ;;
+        -*) command ls ${_terminal_files_ls_color:+"$_terminal_files_ls_color"} "${original_arguments[@]}"; return "$?" ;;
         *) paths[path_count]=$1; path_count=$((path_count + 1)) ;;
       esac
     else
@@ -226,8 +292,9 @@ _terminal_files_main() (
       result=1
       continue
     fi
+    _terminal_files_prefix=''
     _terminal_files_print "$path" "$path"
-    if [[ -d $path && ! -L $path ]]; then
+    if ((_terminal_files_is_directory)); then
       _terminal_files_walk "$path" '' 0 || result=1
     fi
   done
@@ -242,5 +309,24 @@ terminal_tree() {
   _terminal_files_main 3 "$@"
 }
 
-alias ls='terminal_ls'
+# Colour for options passed to the system ls (ls -la, ll), as in the stock
+# Ubuntu alias. Checked once: old BSD ls on macOS has no --color.
+_terminal_files_ls_color=''
+if command ls --color=auto -d / > /dev/null 2>&1; then
+  _terminal_files_ls_color=--color=auto
+fi
+
+# The tree is for people. In pipes, $(ls) and redirects the plain system ls
+# keeps its usual one-name-per-line output, unless a tree option is given.
+_terminal_files_ls() {
+  if [[ ! -t 1 ]]; then
+    case " $* " in
+      *' --level='*|*' --color=always '*) ;;
+      *) command ls "$@"; return "$?" ;;
+    esac
+  fi
+  terminal_ls "$@"
+}
+
+alias ls='_terminal_files_ls'
 alias tree='terminal_tree'
